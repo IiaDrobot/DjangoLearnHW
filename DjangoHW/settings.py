@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from environ import Env
 
+import task_hw8
+
 env = Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -43,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     #lokal
     'greetings.apps.GreetingsConfig',
-]
+    'task_hw8.apps.TaskHw8Config',
+    ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
