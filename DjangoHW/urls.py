@@ -17,10 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from greetings.views import greetings
-
+from task_hw8.views import task_crud_view
 
 urlpatterns = [
-        path('admin/', admin.site.urls),
-        path('greet/', greetings),
-
+    path('admin/', admin.site.urls),
+    path('greet/', greetings),
+    path('task-crud/', task_crud_view),
 ]
+
+
+
+
+
+
