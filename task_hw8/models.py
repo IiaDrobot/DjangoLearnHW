@@ -5,7 +5,8 @@ status_choises = [
     ("In progress", "In progress"),
     ("Pending", "Pending"),
     ("Blocked", "Blocked"),
-    ("Done", "Done"),]
+    ("Done", "Done"),
+    ("Archived", "Archived"),]
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
