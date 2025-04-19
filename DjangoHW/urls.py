@@ -15,15 +15,26 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
 from greetings.views import greetings
 from task_hw8.views import task_crud_view
+from task_hw8.views import create_task
+from task_hw8.views import get_all_tasks, get_task_by_id
+from django.urls import path, include
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('greet/', greetings),
     path('task-crud/', task_crud_view),
+
+    path('tasks/create/', create_task, name='task-create'),
+    path('tasks/', get_all_tasks, name='task-list'),
+    path('tasks/<int:pk>/', get_task_by_id, name='task-detail'),
+
+
 ]
+
+
 
 
 

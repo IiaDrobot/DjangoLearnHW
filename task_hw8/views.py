@@ -3,6 +3,62 @@ from django.shortcuts import HttpResponse
 from django.utils import timezone
 from datetime import timedelta
 from .models import Task, SubTask
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import TaskSerializer
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
+from collections import Counter
+
+@api_view(['GET', 'POST'])
+@renderer_classes([JSONRenderer])
+def create_task(request):
+    if request.method == 'GET':
+        return Response({'message': 'Отправь POST-запрос с данными задачи'})
+
+    serializer = TaskSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=201)
+
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['GET'])
+def get_all_tasks(request):
+    tasks = Task.objects.all()
+    serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def get_task_by_id(request, pk):
+    try:
+        task = Task.objects.get(pk=pk)
+    except Task.DoesNotExist:
+        return Response({'error': 'Задача не найдена'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = TaskSerializer(task)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def task_statistics(request):
+    tasks = Task.objects.all()
+    total_tasks = tasks.count()
+
+
+    status_counts = Counter(tasks.values_list('status', flat=True))
+
+
+    overdue_tasks = tasks.filter(deadline__lt=timezone.now()).exclude(status='завершена').count()
+
+    return Response({
+        'total_tasks': total_tasks,
+        'status_counts': status_counts,
+        'overdue_tasks': overdue_tasks
+    })
+
 
 def task_crud_view(request):
 

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     #lokal
     'greetings.apps.GreetingsConfig',
     'task_hw8.apps.TaskHw8Config',
+    'rest_framework',
     ]
 
 MIDDLEWARE = [
