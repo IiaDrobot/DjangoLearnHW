@@ -26,6 +26,9 @@ from task_hw8.views import (
     SubTaskDetailUpdateDeleteView
 )
 from django.urls import path
+from task_hw8.views import get_tasks_by_weekday
+from task_hw8.views import SubTaskListView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -41,7 +44,13 @@ urlpatterns = [
 
     path('subtasks/', SubTaskListCreateView.as_view(), name='subtask-list-create'),
     path('subtasks/<int:pk>/', SubTaskDetailUpdateDeleteView.as_view(), name='subtask-detail-update-delete'),
+    path('tasks/by-weekday/', get_tasks_by_weekday, name='task-by-weekday'),
+    path('subtasks/', SubTaskListView.as_view(), name='subtask-list'),
+
+
+
 ]
+
 
 
 
