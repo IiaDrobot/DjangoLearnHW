@@ -2,13 +2,23 @@
 from django.shortcuts import HttpResponse
 from django.utils import timezone
 from datetime import timedelta
-from .models import Task, SubTask
+from collections import Counter
+
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import TaskSerializer
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
-from collections import Counter
+
+from .models import Task, SubTask
+from .serializers import (
+    TaskSerializer,
+    TaskCreateSerializer,
+    TaskDetailSerializer,
+    SubTaskSerializer,
+    SubTaskCreateSerializer,
+)
+
 
 @api_view(['GET', 'POST'])
 @renderer_classes([JSONRenderer])
@@ -16,12 +26,13 @@ def create_task(request):
     if request.method == 'GET':
         return Response({'message': 'Отправь POST-запрос с данными задачи'})
 
-    serializer = TaskSerializer(data=request.data)
+    serializer = TaskCreateSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=201)
 
     return Response(serializer.errors, status=400)
+
 
 
 @api_view(['GET'])
@@ -38,7 +49,7 @@ def get_task_by_id(request, pk):
     except Task.DoesNotExist:
         return Response({'error': 'Задача не найдена'}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = TaskSerializer(task)
+    serializer = TaskDetailSerializer(task)
     return Response(serializer.data)
 
 
@@ -46,12 +57,8 @@ def get_task_by_id(request, pk):
 def task_statistics(request):
     tasks = Task.objects.all()
     total_tasks = tasks.count()
-
-
     status_counts = Counter(tasks.values_list('status', flat=True))
-
-
-    overdue_tasks = tasks.filter(deadline__lt=timezone.now()).exclude(status='завершена').count()
+    overdue_tasks = tasks.filter(deadline__lt=timezone.now()).exclude(status='Done').count()
 
     return Response({
         'total_tasks': total_tasks,
@@ -60,8 +67,55 @@ def task_statistics(request):
     })
 
 
-def task_crud_view(request):
 
+class SubTaskListCreateView(APIView):
+    def get(self, request):
+        subtasks = SubTask.objects.all()
+        serializer = SubTaskSerializer(subtasks, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = SubTaskCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class SubTaskDetailUpdateDeleteView(APIView):
+    def get_object(self, pk):
+        try:
+            return SubTask.objects.get(pk=pk)
+        except SubTask.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        subtask = self.get_object(pk)
+        if not subtask:
+            return Response({'error': 'Подзадача не найдена'}, status=404)
+        serializer = SubTaskSerializer(subtask)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        subtask = self.get_object(pk)
+        if not subtask:
+            return Response({'error': 'Подзадача не найдена'}, status=404)
+        serializer = SubTaskCreateSerializer(subtask, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk):
+        subtask = self.get_object(pk)
+        if not subtask:
+            return Response({'error': 'Подзадача не найдена'}, status=404)
+        subtask.delete()
+        return Response(status=204)
+
+
+
+def task_crud_view(request):
     task, created = Task.objects.get_or_create(
         title="Prepare presentation",
         defaults={
@@ -70,7 +124,6 @@ def task_crud_view(request):
             "deadline": timezone.now() + timedelta(days=3),
         }
     )
-
 
     SubTask.objects.get_or_create(
         title="Gather information",
@@ -92,10 +145,8 @@ def task_crud_view(request):
         }
     )
 
-
     new_tasks = Task.objects.filter(status="New")
     overdue_done_subtasks = SubTask.objects.filter(status="Done", deadline__lt=timezone.now())
-
 
     task.status = "In progress"
     task.save()
@@ -108,11 +159,9 @@ def task_crud_view(request):
     subtask2.description = "Create and format presentation slides"
     subtask2.save()
 
-
     task.delete()
 
     return HttpResponse("CRUD операции выполнены.")
-
 
 
 
