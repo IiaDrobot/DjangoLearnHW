@@ -23,6 +23,22 @@ from .serializers import (
     SubTaskCreateSerializer,
 )
 from .pagination import SubTaskPagination
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from .serializers import CategorySerializer
+from .models import Task
+from task_hw8.models import Category
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    @action(detail=True, methods=['get'])
+    def count_tasks(self, request, pk=None):
+        category = self.get_object()
+        count = Task.objects.filter(category=category).count()
+        return Response({'task_count': count})
+
 
 
 # Task Views

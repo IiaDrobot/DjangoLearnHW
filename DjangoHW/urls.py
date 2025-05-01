@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from greetings.views import greetings
 from task_hw8.views import (
     task_crud_view,
@@ -29,7 +29,15 @@ from task_hw8.views import (
     TaskListCreateView,
     TaskRetrieveUpdateDestroyView,
     get_tasks_by_weekday,
+    CategoryViewSet,
 )
+
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r'categories', CategoryViewSet, basename='category')
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -45,8 +53,10 @@ urlpatterns = [
     path('subtasks/', SubTaskListCreateView.as_view(), name='subtask-list-create'),
     path('subtasks/list/', SubTaskListView.as_view(), name='subtask-list'),
     path('subtasks/<int:pk>/', SubTaskRetrieveUpdateDestroyView.as_view(), name='subtask-detail-update-delete'),
-]
 
+
+    path('api/', include(router.urls)),
+]
 
 
 

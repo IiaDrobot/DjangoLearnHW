@@ -1,4 +1,27 @@
 from django.db import models
+from django.utils import timezone
+from .managers import SoftDeleteManager
+
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+            verbose_name = "Category"
+            db_table = "task_hw8_category"
+            unique_together = ("name",)
 
 status_choises = [
     ("New", "New"),
@@ -8,16 +31,7 @@ status_choises = [
     ("Done", "Done"),
     ("Archived", "Archived"),]
 
-class Category(models.Model):
-    name = models.CharField(max_length=100)
 
-    class Meta:
-        verbose_name = "Category"
-        db_table = "task_hw8_category"
-        unique_together = ("name",)
-
-    def __str__(self):
-        return self.name
 
 class Task(models.Model):
     title = models.CharField(max_length=100, unique_for_date='deadline')

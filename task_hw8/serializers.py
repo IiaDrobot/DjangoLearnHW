@@ -2,6 +2,14 @@ from rest_framework import serializers
 from django.utils import timezone
 from .models import Task, SubTask, Category
 
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
