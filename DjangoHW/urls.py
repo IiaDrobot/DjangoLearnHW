@@ -30,9 +30,15 @@ from task_hw8.views import (
     TaskRetrieveUpdateDestroyView,
     get_tasks_by_weekday,
     CategoryViewSet,
+    test_log,
 )
 
 from rest_framework.routers import DefaultRouter
+
+from django.urls import path
+from task_hw8 import views
+from task_hw8.views import test_log
+
 
 
 router = DefaultRouter()
@@ -56,6 +62,8 @@ urlpatterns = [
 
 
     path('api/', include(router.urls)),
+
+    path('test-log/', views.test_log, name='test_log'),
 ]
 
 

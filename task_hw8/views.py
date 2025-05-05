@@ -28,6 +28,15 @@ from rest_framework.decorators import action
 from .serializers import CategorySerializer
 from .models import Task
 from task_hw8.models import Category
+import logging
+from django.http import HttpResponse
+
+logger = logging.getLogger(__name__)
+
+
+def test_log(request):
+    logger.info('Тестовый запрос на /test-log/')
+    return HttpResponse("Test log recorded.")
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -252,4 +261,5 @@ def task_crud_view(request):
 #             return Response({'error': 'Подзадача не найдена'}, status=404)
 #         subtask.delete()
 #         return Response(status=204)
+
 
