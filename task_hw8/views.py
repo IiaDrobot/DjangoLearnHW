@@ -1,35 +1,34 @@
-from django.shortcuts import HttpResponse
-from django.utils import timezone
 from datetime import timedelta
 from collections import Counter
 import calendar
+import logging
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.decorators import api_view, renderer_classes
-from rest_framework.renderers import JSONRenderer
-from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from django.http import HttpResponse
+from django.utils import timezone
+
+from rest_framework import status, viewsets, permissions
+from rest_framework.decorators import api_view, renderer_classes, action
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models.functions import ExtractWeekDay
 
-from .models import Task, SubTask
+from .models import Task, SubTask, Category
 from .serializers import (
     TaskSerializer,
     TaskCreateSerializer,
     TaskDetailSerializer,
     SubTaskSerializer,
     SubTaskCreateSerializer,
+    CategorySerializer
 )
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from .pagination import SubTaskPagination
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from .serializers import CategorySerializer
-from .models import Task
-from task_hw8.models import Category
-import logging
-from django.http import HttpResponse
+from .permissions import IsAdminOrReadOnly
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +37,12 @@ def test_log(request):
     logger.info('Тестовый запрос на /test-log/')
     return HttpResponse("Test log recorded.")
 
+
 class CategoryViewSet(viewsets.ModelViewSet):
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
 
     @action(detail=True, methods=['get'])
     def count_tasks(self, request, pk=None):
@@ -49,11 +51,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Response({'task_count': count})
 
 
-
-# Task Views
 class TaskListCreateView(ListCreateAPIView):
+
     queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
@@ -62,15 +64,19 @@ class TaskListCreateView(ListCreateAPIView):
 
 
 class TaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+
     queryset = Task.objects.all()
     serializer_class = TaskDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
-#  SubTask Views
+
 class SubTaskListCreateView(ListCreateAPIView):
+
     queryset = SubTask.objects.all()
     serializer_class = SubTaskCreateSerializer
     pagination_class = SubTaskPagination
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
@@ -79,13 +85,17 @@ class SubTaskListCreateView(ListCreateAPIView):
 
 
 class SubTaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class SubTaskListView(ListAPIView):
+
     serializer_class = SubTaskSerializer
     pagination_class = SubTaskPagination
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = SubTask.objects.all().order_by('-created_at')
@@ -100,9 +110,9 @@ class SubTaskListView(ListAPIView):
         return queryset
 
 
-#  API Views
 @api_view(['GET'])
 def get_tasks_by_weekday(request):
+
     weekday_name = request.query_params.get('weekday', None)
 
     if weekday_name:
@@ -125,6 +135,7 @@ def get_tasks_by_weekday(request):
 @api_view(['GET', 'POST'])
 @renderer_classes([JSONRenderer])
 def create_task(request):
+
     if request.method == 'GET':
         return Response({'message': 'Отправь POST-запрос с данными задачи'})
 
@@ -138,6 +149,7 @@ def create_task(request):
 
 @api_view(['GET'])
 def get_all_tasks(request):
+
     tasks = Task.objects.all()
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data)
@@ -145,6 +157,7 @@ def get_all_tasks(request):
 
 @api_view(['GET'])
 def get_task_by_id(request, pk):
+
     try:
         task = Task.objects.get(pk=pk)
     except Task.DoesNotExist:
@@ -156,6 +169,7 @@ def get_task_by_id(request, pk):
 
 @api_view(['GET'])
 def task_statistics(request):
+
     tasks = Task.objects.all()
     total_tasks = tasks.count()
     status_counts = Counter(tasks.values_list('status', flat=True))
@@ -166,56 +180,6 @@ def task_statistics(request):
         'status_counts': status_counts,
         'overdue_tasks': overdue_tasks
     })
-
-
-def task_crud_view(request):
-    task, created = Task.objects.get_or_create(
-        title="Prepare presentation",
-        defaults={
-            "description": "Prepare materials and slides for the presentation",
-            "status": "New",
-            "deadline": timezone.now() + timedelta(days=3),
-        }
-    )
-
-    SubTask.objects.get_or_create(
-        title="Gather information",
-        defaults={
-            "description": "Find necessary information for the presentation",
-            "task": task,
-            "status": "New",
-            "deadline": timezone.now() + timedelta(days=2),
-        }
-    )
-
-    SubTask.objects.get_or_create(
-        title="Create slides",
-        defaults={
-            "description": "Create presentation slides",
-            "task": task,
-            "status": "New",
-            "deadline": timezone.now() + timedelta(days=1),
-        }
-    )
-
-    new_tasks = Task.objects.filter(status="New")
-    overdue_done_subtasks = SubTask.objects.filter(status="Done", deadline__lt=timezone.now())
-
-    task.status = "In progress"
-    task.save()
-
-    subtask1 = SubTask.objects.get(title="Gather information")
-    subtask1.deadline = timezone.now() - timedelta(days=2)
-    subtask1.save()
-
-    subtask2 = SubTask.objects.get(title="Create slides")
-    subtask2.description = "Create and format presentation slides"
-    subtask2.save()
-
-    task.delete()
-
-    return HttpResponse("CRUD операции выполнены.")
-
 
 
 # class SubTaskListCreateView(APIView):

@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from greetings.views import greetings
 from task_hw8.views import (
-    task_crud_view,
+    #task_crud_view,
     create_task,
     get_all_tasks,
     get_task_by_id,
@@ -38,6 +38,10 @@ from rest_framework.routers import DefaultRouter
 from django.urls import path
 from task_hw8 import views
 from task_hw8.views import test_log
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 
 
@@ -48,7 +52,7 @@ router.register(r'categories', CategoryViewSet, basename='category')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('greet/', greetings),
-    path('task-crud/', task_crud_view),
+   # path('task-crud/', task_crud_view),
 
     path('tasks/create/', create_task, name='task-create'),
     path('tasks/', TaskListCreateView.as_view(), name='task-list-create'),
@@ -64,6 +68,9 @@ urlpatterns = [
     path('api/', include(router.urls)),
 
     path('test-log/', views.test_log, name='test_log'),
+
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 
