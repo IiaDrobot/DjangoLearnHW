@@ -5,6 +5,7 @@ import logging
 
 from django.http import HttpResponse
 from django.utils import timezone
+from django.conf import settings
 
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import api_view, renderer_classes, action
@@ -25,10 +26,8 @@ from .serializers import (
     SubTaskCreateSerializer,
     CategorySerializer
 )
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from .pagination import SubTaskPagination
-from .permissions import IsAdminOrReadOnly
+from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,6 @@ def test_log(request):
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
@@ -47,13 +45,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def count_tasks(self, request, pk=None):
         category = self.get_object()
-        count = Task.objects.filter(category=category).count()
+        count = Task.objects.filter(categories=category).count()
         return Response({'task_count': count})
 
 
 class TaskListCreateView(ListCreateAPIView):
-
-    queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -63,17 +59,24 @@ class TaskListCreateView(ListCreateAPIView):
     ordering = ['-created_at']
 
 
+    def get_queryset(self):
+        return Task.objects.filter(owner=self.request.user)
+
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
 class TaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
-
-    queryset = Task.objects.all()
     serializer_class = TaskDetailSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        return Task.objects.filter(owner=self.request.user)
 
 
 class SubTaskListCreateView(ListCreateAPIView):
-
-    queryset = SubTask.objects.all()
     serializer_class = SubTaskCreateSerializer
     pagination_class = SubTaskPagination
     permission_classes = [permissions.IsAuthenticated]
@@ -83,50 +86,54 @@ class SubTaskListCreateView(ListCreateAPIView):
     ordering_fields = ['created_at']
     ordering = ['-created_at']
 
+    def get_queryset(self):
+        return SubTask.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 
 class SubTaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
-
-    queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        return SubTask.objects.filter(owner=self.request.user)
 
 
 class SubTaskListView(ListAPIView):
-
     serializer_class = SubTaskSerializer
     pagination_class = SubTaskPagination
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = SubTask.objects.all().order_by('-created_at')
+        queryset = SubTask.objects.filter(owner=self.request.user).order_by('-created_at')
         task_title = self.request.query_params.get('task')
-        status = self.request.query_params.get('status')
+        status_param = self.request.query_params.get('status')
 
         if task_title:
             queryset = queryset.filter(task__title__icontains=task_title)
-        if status:
-            queryset = queryset.filter(status__iexact=status)
+        if status_param:
+            queryset = queryset.filter(status__iexact=status_param)
 
         return queryset
 
 
 @api_view(['GET'])
 def get_tasks_by_weekday(request):
-
     weekday_name = request.query_params.get('weekday', None)
 
     if weekday_name:
-        weekdays_map = {day.lower(): index for index, day in enumerate(calendar.day_name, start=0)}
+        weekdays_map = {day.lower(): idx for idx, day in enumerate(calendar.day_name)}
         weekday_num = weekdays_map.get(weekday_name.lower())
-
         if weekday_num is None:
             return Response({'error': 'Некорректное имя дня недели'}, status=400)
 
-        drf_weekday_num = (weekday_num + 1) % 7 + 1
-
-        tasks = Task.objects.annotate(weekday=ExtractWeekDay('deadline')).filter(weekday=drf_weekday_num)
+        drf_weekday_num = weekday_num + 1
+        tasks = Task.objects.annotate(weekday=ExtractWeekDay('deadline'))\
+                   .filter(weekday=drf_weekday_num, owner=request.user)
     else:
-        tasks = Task.objects.all()
+        tasks = Task.objects.filter(owner=request.user)
 
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data)
@@ -135,31 +142,27 @@ def get_tasks_by_weekday(request):
 @api_view(['GET', 'POST'])
 @renderer_classes([JSONRenderer])
 def create_task(request):
-
     if request.method == 'GET':
         return Response({'message': 'Отправь POST-запрос с данными задачи'})
 
-    serializer = TaskCreateSerializer(data=request.data)
+    serializer = TaskCreateSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(owner=request.user)
         return Response(serializer.data, status=201)
-
     return Response(serializer.errors, status=400)
 
 
 @api_view(['GET'])
 def get_all_tasks(request):
-
-    tasks = Task.objects.all()
+    tasks = Task.objects.filter(owner=request.user)
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def get_task_by_id(request, pk):
-
     try:
-        task = Task.objects.get(pk=pk)
+        task = Task.objects.get(pk=pk, owner=request.user)
     except Task.DoesNotExist:
         return Response({'error': 'Задача не найдена'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -169,8 +172,7 @@ def get_task_by_id(request, pk):
 
 @api_view(['GET'])
 def task_statistics(request):
-
-    tasks = Task.objects.all()
+    tasks = Task.objects.filter(owner=request.user)
     total_tasks = tasks.count()
     status_counts = Counter(tasks.values_list('status', flat=True))
     overdue_tasks = tasks.filter(deadline__lt=timezone.now()).exclude(status='Done').count()

@@ -2,6 +2,9 @@ from django.db import models
 from django.utils import timezone
 from .managers import SoftDeleteManager
 
+from django.conf import settings
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
     is_deleted = models.BooleanField(default=False)
@@ -40,7 +43,13 @@ class Task(models.Model):
     status = models.CharField(max_length=40, choices=status_choises, default="New")
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-
+    owner = models.ForeignKey(
+       settings.AUTH_USER_MODEL,
+       on_delete = models.CASCADE,
+       related_name = 'tasks',
+       null = True,
+       blank = True
+    )
     class Meta:
         verbose_name = "Task"
         db_table = "task_hw8_task"
@@ -57,7 +66,13 @@ class SubTask(models.Model):
     status = models.CharField(max_length=40, choices=status_choises)
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete = models.CASCADE,
+        related_name = 'subtasks',
+        null = True,
+        blank = True
+          )
     class Meta:
         verbose_name = "SubTask"
         db_table = "task_hw8_subtask"

@@ -17,20 +17,21 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 
-
-
 class SubTaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubTask
         fields = '__all__'
-        read_only_fields = ['created_at']
+        #read_only_fields = ['created_at']
+        read_only_fields = ['owner', 'created_at']
 
+        def create(self, validated_data):
+            return SubTask.objects.create(owner=self.context['request'].user, **validated_data)
 
 class SubTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubTask
         fields = ['id', 'title', 'description', 'status', 'deadline', 'created_at']
-
+        owner = serializers.StringRelatedField(read_only=True)
 
 
 def validate_name(value):
@@ -56,10 +57,10 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
 
 class TaskDetailSerializer(serializers.ModelSerializer):
     subtasks = SubTaskSerializer(source='subtask_set', many=True, read_only=True)
-
+    owner = serializers.StringRelatedField(read_only=True)
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'status', 'deadline', 'created_at', 'subtasks']
+        fields = ['id', 'title', 'description', 'status', 'deadline', 'created_at', 'owner','subtasks']
 
 
 
@@ -73,5 +74,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
-
+        read_only_fields = ['owner']
+    def create(self, validated_data):
+        return Task.objects.create(owner=self.context['request'].user, **validated_data)
 
