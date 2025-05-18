@@ -17,7 +17,9 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models.functions import ExtractWeekDay
 
-from .models import Task, SubTask, Category
+#from .models import Task, SubTask, Category
+from task_hw8.models import Task, SubTask, Category
+
 from .serializers import (
     TaskSerializer,
     TaskCreateSerializer,

@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'greetings.apps.GreetingsConfig',
     'task_hw8.apps.TaskHw8Config',
 
+    'rest_framework_simplejwt',
+
     'rest_framework',
     'django_filters',
     'drf_yasg'
@@ -128,8 +130,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'task_hw8.pagination.CustomCursorPagination',
-    'PAGE_SIZE': 6,
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,
+
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',

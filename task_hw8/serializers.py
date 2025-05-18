@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Task, SubTask, Category
+from task_hw8.models import Task,SubTask,Category
+
 
 
 
