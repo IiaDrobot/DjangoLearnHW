@@ -16,6 +16,9 @@ from environ import Env
 import os
 from datetime import timedelta
 
+
+
+
 env = Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -47,7 +50,10 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'django_filters',
-    'drf_yasg'
+    'drf_yasg',
+    'rest_framework_simplejwt.token_blacklist'
+
+
 
 ]
 
@@ -138,6 +144,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+
 }
 
 

@@ -31,6 +31,33 @@ from .serializers import (
 from .pagination import SubTaskPagination
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+
+
+class LogOutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        response = Response(status=status.HTTP_200_OK)
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        response.data = {'message': 'Успешный выход'}
+        return response
+
+
+
+
+
 logger = logging.getLogger(__name__)
 
 

@@ -41,6 +41,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from task_hw8.views import LogOutAPIView
+from rest_framework_simplejwt.views import (TokenBlacklistView)
+
+
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -79,6 +83,10 @@ urlpatterns = [
     path(r'swagger(?P<format>\.json|\.yaml)', schema_view.without_ui()),
     path('swagger/', schema_view.with_ui('swagger')),
     path('redoc/', schema_view.with_ui('redoc')),
+    path('api/logout/', LogOutAPIView.as_view(), name='logout'),
+    path('api/logout/', TokenBlacklistView.as_view(), name='token_blacklist'),
+
+
 ]
 
 
