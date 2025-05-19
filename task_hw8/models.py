@@ -26,7 +26,7 @@ class Category(models.Model):
             db_table = "task_hw8_category"
             unique_together = ("name",)
 
-status_choises = [
+status_choices = [
     ("New", "New"),
     ("In progress", "In progress"),
     ("Pending", "Pending"),
@@ -40,7 +40,7 @@ class Task(models.Model):
     title = models.CharField(max_length=100, unique_for_date='deadline')
     description = models.TextField(null=True, blank=True)
     categories = models.ManyToManyField(Category)
-    status = models.CharField(max_length=40, choices=status_choises, default="New")
+    status = models.CharField(max_length=40, choices=status_choices, default="New")
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
@@ -63,7 +63,7 @@ class SubTask(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
-    status = models.CharField(max_length=40, choices=status_choises)
+    status = models.CharField(max_length=40, choices=status_choices)
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(

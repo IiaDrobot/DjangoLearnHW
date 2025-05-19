@@ -26,6 +26,7 @@ class TaskAdmin(admin.ModelAdmin):
     list_per_page = 6
     inlines = [SubTaskInline]
     actions = [mark_as_archived]
+    fields = ('title', 'description', 'deadline', 'status', 'categories', 'owner')
 
     def short_title(self, obj):
         short = obj.title[:10] + "..." if len(obj.title) > 10 else obj.title
